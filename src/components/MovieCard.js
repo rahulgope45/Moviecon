@@ -22,8 +22,9 @@ const MovieCard = ({ movie }) => {
               {release_date ? new Date(release_date).getFullYear() : 'N/A'}
             </span>
             <span className="px-3 py-1 bg-yellow-400 border-2 border-black font-bold">
-              ⭐ {vote_average.toFixed(1)}
+              ⭐ {typeof vote_average === "number" ? vote_average.toFixed(1) : "N/A"}
             </span>
+
           </div>
         </div>
       </div>

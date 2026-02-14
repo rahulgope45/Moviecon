@@ -1,29 +1,62 @@
-import { useRouter } from 'next/router';
 import Navbar from '@/components/Navbar';
 import SimilarMovies from '@/components/SimilarMovies';
-import SEO from '@/components/SEO';
-import { getMovieDetails,getImageUrl } from '@/utils/tmdbApi';
+import { getMovieDetails, getImageUrl } from '@/utils/tmdbApi';
 
-
-export async function getServerSideProps({ params }) {
-  const { id } = params;
-
+// Generate dynamic metadata for movie pages
+export async function generateMetadata({ params }) {
+  const { id } = await params;
+  
   try {
     const movie = await getMovieDetails(id);
-    
+    const description = movie.overview.length > 155 
+      ? `${movie.overview.substring(0, 152)}...` 
+      : movie.overview;
+
     return {
-      props: {
-        movie,
+      title: `${movie.title} (${new Date(movie.release_date).getFullYear()})`,
+      description,
+      openGraph: {
+        title: `${movie.title} (${new Date(movie.release_date).getFullYear()})`,
+        description,
+        type: 'video.movie',
+        images: [
+          {
+            url: getImageUrl(movie.poster_path, 'original'),
+            width: 1200,
+            height: 630,
+            alt: movie.title,
+          }
+        ],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${movie.title} (${new Date(movie.release_date).getFullYear()})`,
+        description,
+        images: [getImageUrl(movie.poster_path, 'original')],
       },
     };
   } catch (error) {
     return {
-      notFound: true,
+      title: 'Movie Not Found',
+      description: 'The requested movie could not be found.',
     };
   }
 }
 
-export default function MovieDetail({ movie }) {
+export default async function MovieDetail({ params }) {
+  const { id } = await params;
+
+  let movie;
+  try {
+    movie = await getMovieDetails(id);
+  } catch (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <h1 className="text-4xl font-bold">Movie not found</h1>
+      </div>
+    );
+  }
+
   const {
     title,
     overview,
@@ -41,10 +74,7 @@ export default function MovieDetail({ movie }) {
   const cast = credits?.cast?.slice(0, 8) || [];
   const similarMovies = similar?.results || [];
 
-  const seoDescription = overview.length > 155 
-    ? `${overview.substring(0, 152)}...` 
-    : overview;
-
+  // JSON-LD for movie page
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Movie',
@@ -68,19 +98,17 @@ export default function MovieDetail({ movie }) {
 
   return (
     <>
-      <SEO
-        title={`${title} (${new Date(release_date).getFullYear()})`}
-        description={seoDescription}
-        image={getImageUrl(poster_path, 'original')}
-        type="video.movie"
-        jsonLd={jsonLd}
+      {/* JSON-LD structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
       <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100">
         <Navbar />
 
         <main className="container mx-auto px-4 py-12">
-          {/* Hero Section with Backdrop */}
+          {/* ... rest of your existing JSX ... */}
           <div className="relative mb-12 border-8 border-black overflow-hidden">
             {backdrop_path && (
               <div className="absolute inset-0">
@@ -93,7 +121,6 @@ export default function MovieDetail({ movie }) {
             )}
             <div className="relative bg-white/90 p-8 md:p-12">
               <div className="grid md:grid-cols-3 gap-8">
-                {/* Poster */}
                 <div className="md:col-span-1">
                   <div className="border-4 border-black shadow-brutal">
                     <img
@@ -104,7 +131,6 @@ export default function MovieDetail({ movie }) {
                   </div>
                 </div>
 
-                {/* Details */}
                 <div className="md:col-span-2">
                   <h1 className="text-4xl md:text-6xl font-bold mb-4 border-b-4 border-black inline-block pb-2">
                     {title}
@@ -156,7 +182,6 @@ export default function MovieDetail({ movie }) {
             </div>
           </div>
 
-          {/* Cast Section */}
           {cast.length > 0 && (
             <section className="mb-12 bg-white border-8 border-black p-8">
               <h2 className="text-3xl font-bold mb-6 border-b-4 border-black inline-block pb-2">
@@ -181,7 +206,6 @@ export default function MovieDetail({ movie }) {
             </section>
           )}
 
-          {/* Similar Movies */}
           {similarMovies.length > 0 && (
             <SimilarMovies movies={similarMovies} />
           )}

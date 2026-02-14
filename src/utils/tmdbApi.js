@@ -39,17 +39,19 @@ export const getNewReleases = async (page = 1) => {
 
 // Get movie details
 export const getMovieDetails = async (movieId) => {
-  try {
-    const response = await tmdbApi.get(`/movie/${movieId}`, {
-      params: {
-        append_to_response: 'credits,similar',
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching movie details:', error);
-    throw error;
+  const res = await fetch(
+    `https://api.themoviedb.org/3/movie/${movieId}?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&append_to_response=credits,similar`,
+    {
+      cache: "no-store", // always fresh (like getServerSideProps)
+    }
+  );
+
+  if (!res.ok) {
+    console.error("TMDB Error:", res.status);
+    throw new Error("Failed to fetch movie");
   }
+
+  return await res.json();
 };
 
 // Get similar movies

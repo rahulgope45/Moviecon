@@ -1,16 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation"; // ✅ correct for App Router
+import { useRouter } from "next/navigation";
 
 const SearchBar = () => {
   const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
     if (query.trim()) {
+      setLoading(true);
       router.push(`/?search=${encodeURIComponent(query)}`);
+      // optional: reset loading after navigation
+      setTimeout(() => setLoading(false), 1000);
     }
   };
 
@@ -27,9 +31,12 @@ const SearchBar = () => {
         />
         <button
           type="submit"
-          className="absolute right-2 top-1/2 -translate-y-1/2 px-6 py-2 bg-yellow-400 border-4 border-black font-bold hover:bg-yellow-300 transition-all hover:translate-x-1 hover:translate-y-1 shadow-brutal"
+          disabled={loading}
+          className={`absolute right-2 top-1/2 -translate-y-1/2 px-6 py-2 border-4 border-black font-bold shadow-brutal 
+            transition-transform transform hover:scale-105 
+            ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-yellow-400 hover:bg-yellow-300"}`}
         >
-          Search
+          {loading ? "Loading..." : "Search"}
         </button>
       </div>
     </form>
